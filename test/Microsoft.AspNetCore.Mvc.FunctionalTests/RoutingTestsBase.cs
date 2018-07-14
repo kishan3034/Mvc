@@ -7,6 +7,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Internal;
 using Microsoft.AspNetCore.Routing;
 using Newtonsoft.Json;
 using Xunit;
@@ -17,10 +19,56 @@ namespace Microsoft.AspNetCore.Mvc.FunctionalTests
     {
         protected RoutingTestsBase(MvcTestFixture<TStartup> fixture)
         {
-            Client = fixture.CreateDefaultClient();
+            var factory = fixture.Factories.FirstOrDefault() ?? fixture.WithWebHostBuilder(ConfigureWebHostBuilder);
+            Client = factory.CreateDefaultClient();
         }
 
+        private static void ConfigureWebHostBuilder(IWebHostBuilder builder) =>
+            builder.UseStartup<TStartup>();
+
         public HttpClient Client { get; }
+
+        [Fact]
+        public abstract Task RouteData_Routers_ConventionalRoute();
+
+        [Fact]
+        public abstract Task RouteData_Routers_AttributeRoute();
+
+        // Verifies that components in the MVC pipeline can modify datatokens
+        // without impacting any static data.
+        //
+        // This does two request, to verify that the data in the route is not modified
+        [Fact]
+        public async Task RouteData_DataTokens_FilterCanSetDataTokens()
+        {
+            // Arrange
+            var response = await Client.GetAsync("http://localhost/RouteData/DataTokens");
+
+            // Guard
+            var body = await response.Content.ReadAsStringAsync();
+            var result = JsonConvert.DeserializeObject<ResultData>(body);
+            Assert.Single(result.DataTokens);
+            Assert.Single(result.DataTokens, kvp => kvp.Key == "actionName" && ((string)kvp.Value) == "DataTokens");
+
+            // Act
+            response = await Client.GetAsync("http://localhost/RouteData/Conventional");
+
+            // Assert
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            body = await response.Content.ReadAsStringAsync();
+            result = JsonConvert.DeserializeObject<ResultData>(body);
+
+            Assert.Single(result.DataTokens);
+            Assert.Single(result.DataTokens, kvp => kvp.Key == "actionName" && ((string)kvp.Value) == "Conventional");
+        }
+
+        protected class ResultData
+        {
+            public Dictionary<string, object> DataTokens { get; set; }
+
+            public string[] Routers { get; set; }
+        }
 
         [Fact]
         public virtual async Task ConventionalRoutedController_ActionIsReachable()

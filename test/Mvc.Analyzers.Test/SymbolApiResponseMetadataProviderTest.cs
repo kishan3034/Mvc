@@ -1,11 +1,16 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Analyzer.Testing;
 using Microsoft.AspNetCore.Mvc.Analyzers.Infrastructure;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Xunit;
 
 namespace Microsoft.AspNetCore.Mvc.Analyzers
@@ -21,10 +26,10 @@ namespace Microsoft.AspNetCore.Mvc.Analyzers
             var compilation = await GetResponseMetadataCompilation();
             var controller = compilation.GetTypeByMetadataName($"{Namespace}.{nameof(GetResponseMetadata_ControllerWithoutConvention)}");
             var method = (IMethodSymbol)controller.GetMembers(nameof(GetResponseMetadata_ControllerWithoutConvention.GetPerson)).First();
-            var typeCache = new ApiControllerTypeCache(compilation);
+            var symbolCache = new ApiControllerSymbolCache(compilation);
 
             // Act
-            var result = SymbolApiResponseMetadataProvider.GetResponseMetadata(typeCache, method);
+            var result = SymbolApiResponseMetadataProvider.GetDeclaredResponseMetadata(symbolCache, method, Array.Empty<AttributeData>());
 
             // Assert
             Assert.Empty(result);
@@ -37,10 +42,10 @@ namespace Microsoft.AspNetCore.Mvc.Analyzers
             var compilation = await GetResponseMetadataCompilation();
             var controller = compilation.GetTypeByMetadataName($"{Namespace}.{nameof(GetResponseMetadata_ControllerWithoutConvention)}");
             var method = (IMethodSymbol)controller.GetMembers(nameof(GetResponseMetadata_ControllerWithoutConvention.PostPerson)).First();
-            var typeCache = new ApiControllerTypeCache(compilation);
+            var symbolCache = new ApiControllerSymbolCache(compilation);
 
             // Act
-            var result = SymbolApiResponseMetadataProvider.GetResponseMetadata(typeCache, method);
+            var result = SymbolApiResponseMetadataProvider.GetDeclaredResponseMetadata(symbolCache, method, Array.Empty<AttributeData>());
 
             // Assert
             Assert.Empty(result);
@@ -53,10 +58,10 @@ namespace Microsoft.AspNetCore.Mvc.Analyzers
             var compilation = await GetResponseMetadataCompilation();
             var controller = compilation.GetTypeByMetadataName($"{Namespace}.{nameof(GetResponseMetadata_ControllerActionWithAttributes)}");
             var method = (IMethodSymbol)controller.GetMembers(nameof(GetResponseMetadata_ControllerActionWithAttributes.ActionWithProducesAttribute)).First();
-            var typeCache = new ApiControllerTypeCache(compilation);
+            var symbolCache = new ApiControllerSymbolCache(compilation);
 
             // Act
-            var result = SymbolApiResponseMetadataProvider.GetResponseMetadata(typeCache, method);
+            var result = SymbolApiResponseMetadataProvider.GetDeclaredResponseMetadata(symbolCache, method, Array.Empty<AttributeData>());
 
             // Assert
             Assert.Empty(result);
@@ -69,10 +74,10 @@ namespace Microsoft.AspNetCore.Mvc.Analyzers
             var compilation = await GetResponseMetadataCompilation();
             var controller = compilation.GetTypeByMetadataName($"{Namespace}.{nameof(GetResponseMetadata_ControllerActionWithAttributes)}");
             var method = (IMethodSymbol)controller.GetMembers(nameof(GetResponseMetadata_ControllerActionWithAttributes.ActionWithProducesResponseType_StatusCodeInConstructor)).First();
-            var typeCache = new ApiControllerTypeCache(compilation);
+            var symbolCache = new ApiControllerSymbolCache(compilation);
 
             // Act
-            var result = SymbolApiResponseMetadataProvider.GetResponseMetadata(typeCache, method);
+            var result = SymbolApiResponseMetadataProvider.GetDeclaredResponseMetadata(symbolCache, method, Array.Empty<AttributeData>());
 
             // Assert
             Assert.Collection(
@@ -92,10 +97,10 @@ namespace Microsoft.AspNetCore.Mvc.Analyzers
             var compilation = await GetResponseMetadataCompilation();
             var controller = compilation.GetTypeByMetadataName($"{Namespace}.{nameof(GetResponseMetadata_ControllerActionWithAttributes)}");
             var method = (IMethodSymbol)controller.GetMembers(nameof(GetResponseMetadata_ControllerActionWithAttributes.ActionWithProducesResponseType_StatusCodeAndTypeInConstructor)).First();
-            var typeCache = new ApiControllerTypeCache(compilation);
+            var symbolCache = new ApiControllerSymbolCache(compilation);
 
             // Act
-            var result = SymbolApiResponseMetadataProvider.GetResponseMetadata(typeCache, method);
+            var result = SymbolApiResponseMetadataProvider.GetDeclaredResponseMetadata(symbolCache, method, Array.Empty<AttributeData>());
 
             // Assert
             Assert.Collection(
@@ -115,10 +120,10 @@ namespace Microsoft.AspNetCore.Mvc.Analyzers
             var compilation = await GetResponseMetadataCompilation();
             var controller = compilation.GetTypeByMetadataName($"{Namespace}.{nameof(GetResponseMetadata_ControllerActionWithAttributes)}");
             var method = (IMethodSymbol)controller.GetMembers(nameof(GetResponseMetadata_ControllerActionWithAttributes.ActionWithProducesResponseType_StatusCodeInConstructorAndProperty)).First();
-            var typeCache = new ApiControllerTypeCache(compilation);
+            var symbolCache = new ApiControllerSymbolCache(compilation);
 
             // Act
-            var result = SymbolApiResponseMetadataProvider.GetResponseMetadata(typeCache, method);
+            var result = SymbolApiResponseMetadataProvider.GetDeclaredResponseMetadata(symbolCache, method, Array.Empty<AttributeData>());
 
             // Assert
             Assert.Collection(
@@ -138,10 +143,10 @@ namespace Microsoft.AspNetCore.Mvc.Analyzers
             var compilation = await GetResponseMetadataCompilation();
             var controller = compilation.GetTypeByMetadataName($"{Namespace}.{nameof(GetResponseMetadata_ControllerActionWithAttributes)}");
             var method = (IMethodSymbol)controller.GetMembers(nameof(GetResponseMetadata_ControllerActionWithAttributes.ActionWithProducesResponseType_StatusCodeAndTypeInConstructorAndProperty)).First();
-            var typeCache = new ApiControllerTypeCache(compilation);
+            var symbolCache = new ApiControllerSymbolCache(compilation);
 
             // Act
-            var result = SymbolApiResponseMetadataProvider.GetResponseMetadata(typeCache, method);
+            var result = SymbolApiResponseMetadataProvider.GetDeclaredResponseMetadata(symbolCache, method, Array.Empty<AttributeData>());
 
             // Assert
             Assert.Collection(
@@ -161,10 +166,10 @@ namespace Microsoft.AspNetCore.Mvc.Analyzers
             var compilation = await GetResponseMetadataCompilation();
             var controller = compilation.GetTypeByMetadataName($"{Namespace}.{nameof(GetResponseMetadata_ControllerActionWithAttributes)}");
             var method = (IMethodSymbol)controller.GetMembers(nameof(GetResponseMetadata_ControllerActionWithAttributes.ActionWithCustomProducesResponseTypeAttributeWithArguments)).First();
-            var typeCache = new ApiControllerTypeCache(compilation);
+            var symbolCache = new ApiControllerSymbolCache(compilation);
 
             // Act
-            var result = SymbolApiResponseMetadataProvider.GetResponseMetadata(typeCache, method);
+            var result = SymbolApiResponseMetadataProvider.GetDeclaredResponseMetadata(symbolCache, method, Array.Empty<AttributeData>());
 
             // Assert
             Assert.Collection(
@@ -184,10 +189,10 @@ namespace Microsoft.AspNetCore.Mvc.Analyzers
             var compilation = await GetResponseMetadataCompilation();
             var controller = compilation.GetTypeByMetadataName($"{Namespace}.{nameof(GetResponseMetadata_ControllerActionWithAttributes)}");
             var method = (IMethodSymbol)controller.GetMembers(nameof(GetResponseMetadata_ControllerActionWithAttributes.ActionWithCustomApiResponseMetadataProvider)).First();
-            var typeCache = new ApiControllerTypeCache(compilation);
+            var symbolCache = new ApiControllerSymbolCache(compilation);
 
             // Act
-            var result = SymbolApiResponseMetadataProvider.GetResponseMetadata(typeCache, method);
+            var result = SymbolApiResponseMetadataProvider.GetDeclaredResponseMetadata(symbolCache, method, Array.Empty<AttributeData>());
 
             // Assert
             Assert.Empty(result);
@@ -215,10 +220,10 @@ namespace Microsoft.AspNetCore.Mvc.Analyzers
             var compilation = await GetResponseMetadataCompilation();
             var controller = compilation.GetTypeByMetadataName($"{Namespace}.{typeName}");
             var method = (IMethodSymbol)controller.GetMembers(methodName).First();
-            var typeCache = new ApiControllerTypeCache(compilation);
+            var symbolCache = new ApiControllerSymbolCache(compilation);
 
             // Act
-            var result = SymbolApiResponseMetadataProvider.GetResponseMetadata(typeCache, method);
+            var result = SymbolApiResponseMetadataProvider.GetDeclaredResponseMetadata(symbolCache, method, Array.Empty<AttributeData>());
 
             // Assert
             Assert.Collection(
@@ -296,6 +301,107 @@ namespace Microsoft.AspNetCore.Mvc.Analyzers
             var statusCode = SymbolApiResponseMetadataProvider.GetStatusCode(attribute);
 
             Assert.Equal(expected, statusCode);
+        }
+
+        [Fact]
+        public async Task GetDefaultStatusCode_ReturnsValueDefinedUsingStatusCodeConstants()
+        {
+            // Arrange
+            var compilation = await GetCompilation("GetDefaultStatusCodeTest");
+            var attribute = compilation.GetTypeByMetadataName(typeof(TestActionResultUsingStatusCodesConstants).FullName).GetAttributes()[0];
+
+            // Act
+            var actual = SymbolApiResponseMetadataProvider.GetDefaultStatusCode(attribute);
+
+            // Assert
+            Assert.Equal(412, actual);
+        }
+
+        [Fact]
+        public async Task GetDefaultStatusCode_ReturnsValueDefinedUsingHttpStatusCast()
+        {
+            // Arrange
+            var compilation = await GetCompilation("GetDefaultStatusCodeTest");
+            var attribute = compilation.GetTypeByMetadataName(typeof(TestActionResultUsingHttpStatusCodeCast).FullName).GetAttributes()[0];
+
+            // Act
+            var actual = SymbolApiResponseMetadataProvider.GetDefaultStatusCode(attribute);
+
+            // Assert
+            Assert.Equal(302, actual);
+        }
+
+        [Fact]
+        public async Task InspectReturnExpression_ReturnsNull_IfReturnExpressionCannotBeFound()
+        {
+            // Arrange & Act
+            var source = @"
+            using Microsoft.AspNetCore.Mvc;
+
+namespace Microsoft.AspNetCore.Mvc.Analyzers
+{
+    [ApiController]
+    public class InspectReturnExpression_ReturnsNull_IfReturnExpressionCannotBeFound : ControllerBase
+    {
+        public IActionResult Get(int id)
+        {
+            return new DoesNotExist(id);
+        }
+    }
+}";
+            var actualResponseMetadata = await RunInspectReturnStatementSyntax(source, nameof(InspectReturnExpression_ReturnsNull_IfReturnExpressionCannotBeFound));
+
+            // Assert
+            Assert.Null(actualResponseMetadata);
+        }
+
+        [Fact]
+        public async Task InspectReturnExpression_ReturnsStatusCodeFromDefaultStatusCodeAttributeOnActionResult()
+        {
+            // Arrange & Act
+            var actualResponseMetadata = await RunInspectReturnStatementSyntax();
+
+            // Assert
+            Assert.NotNull(actualResponseMetadata);
+            Assert.Equal(401, actualResponseMetadata.Value.StatusCode);
+        }
+
+        [Fact]
+        public async Task InspectReturnExpression_ReturnsDefaultResponseMetadata_IfReturnedTypeIsNotActionResult()
+        {
+            // Arrange & Act
+            var actualResponseMetadata = await RunInspectReturnStatementSyntax();
+
+            // Assert
+            Assert.NotNull(actualResponseMetadata);
+            Assert.True(actualResponseMetadata.Value.IsDefaultResponse);
+        }
+
+        private async Task<ActualApiResponseMetadata?> RunInspectReturnStatementSyntax([CallerMemberName]string test = null)
+        {
+            // Arrange
+            var testSource = MvcTestSource.Read(GetType().Name, test);
+            return await RunInspectReturnStatementSyntax(testSource.Source, test);
+        }
+
+        private async Task<ActualApiResponseMetadata?> RunInspectReturnStatementSyntax(string source, string test)
+        {
+            var project = DiagnosticProject.Create(GetType().Assembly, new[] { source });
+            var compilation = await project.GetCompilationAsync();
+            var symbolCache = new ApiControllerSymbolCache(compilation);
+
+            var returnType = compilation.GetTypeByMetadataName($"{Namespace}.{test}");
+            var syntaxTree = returnType.DeclaringSyntaxReferences[0].SyntaxTree;
+
+            var method = (IMethodSymbol)returnType.GetMembers().First();
+            var methodSyntax = syntaxTree.GetRoot().FindNode(method.Locations[0].SourceSpan);
+            var returnStatement = methodSyntax.DescendantNodes().OfType<ReturnStatementSyntax>().First();
+
+            return SymbolApiResponseMetadataProvider.InspectReturnStatementSyntax(
+                symbolCache,
+                compilation.GetSemanticModel(syntaxTree),
+                returnStatement,
+                CancellationToken.None);
         }
 
         private Task<Compilation> GetResponseMetadataCompilation() => GetCompilation("GetResponseMetadataTests");
