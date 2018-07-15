@@ -71,11 +71,13 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                     };
                 }
 
+                var childContent = await output.GetChildContentAsync();
+
                 var tagBuilder = Generator.GenerateValidationMessage(
                     ViewContext,
                     For.ModelExplorer,
                     For.Name,
-                    message: null,
+                    message: childContent.IsEmptyOrWhiteSpace ? null : childContent.GetContent(),
                     tag: null,
                     htmlAttributes: htmlAttributes);
 
@@ -89,7 +91,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                         // We check for whitespace to detect scenarios such as:
                         // <span validation-for="Name">
                         // </span>
-                        var childContent = await output.GetChildContentAsync();
+
                         if (childContent.IsEmptyOrWhiteSpace)
                         {
                             // Provide default message text (if any) since there was nothing useful in the Razor source.
