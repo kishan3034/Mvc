@@ -71,13 +71,19 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                     };
                 }
 
-                var childContent = await output.GetChildContentAsync();
+                string message = null;
+                TagHelperContent tagHelperContent = null;
+                if (!output.IsContentModified)
+                {
+                    tagHelperContent = await output.GetChildContentAsync();
+                    message = tagHelperContent.GetContent();
+                }
 
                 var tagBuilder = Generator.GenerateValidationMessage(
                     ViewContext,
                     For.ModelExplorer,
                     For.Name,
-                    message: childContent.IsEmptyOrWhiteSpace ? null : childContent.GetContent(),
+                    message: output.IsContentModified ? null : message,
                     tag: null,
                     htmlAttributes: htmlAttributes);
 
@@ -85,25 +91,9 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                 {
                     output.MergeAttributes(tagBuilder);
 
-                    // Do not update the content if another tag helper targeting this element has already done so.
-                    if (!output.IsContentModified)
+                    if (!output.IsContentModified && tagBuilder.HasInnerHtml)
                     {
-                        // We check for whitespace to detect scenarios such as:
-                        // <span validation-for="Name">
-                        // </span>
-
-                        if (childContent.IsEmptyOrWhiteSpace)
-                        {
-                            // Provide default message text (if any) since there was nothing useful in the Razor source.
-                            if (tagBuilder.HasInnerHtml)
-                            {
-                                output.Content.SetHtmlContent(tagBuilder.InnerHtml);
-                            }
-                        }
-                        else
-                        {
-                            output.Content.SetHtmlContent(childContent);
-                        }
+                        output.Content.SetHtmlContent(message);
                     }
                 }
             }

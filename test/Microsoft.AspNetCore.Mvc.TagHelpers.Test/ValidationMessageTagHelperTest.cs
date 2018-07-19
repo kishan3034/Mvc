@@ -358,16 +358,16 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
 
         [Theory]
         [InlineData("Content of validation message", "Content of validation message")]
-        [InlineData("\r\n  \r\n", "New HTML")]
         public async Task ProcessAsync_MergesTagBuilderFromGenerateValidationMessage(
             string childContent,
             string expectedOutputContent)
         {
             // Arrange
-            var tagBuilder = new TagBuilder("span2");
+            var tagBuilder = new TagBuilder("span");
             tagBuilder.InnerHtml.SetHtmlContent("New HTML");
             tagBuilder.Attributes.Add("data-foo", "bar");
             tagBuilder.Attributes.Add("data-hello", "world");
+            tagBuilder.Attributes.Add("data-valmsg-replace", "true");
 
             var generator = new Mock<IHtmlGenerator>(MockBehavior.Strict);
             var setup = generator
@@ -409,12 +409,74 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
 
             // Assert
             Assert.Equal("span", output.TagName);
-            Assert.Equal(2, output.Attributes.Count);
+            Assert.Equal(3, output.Attributes.Count);
             var attribute = Assert.Single(output.Attributes, attr => attr.Name.Equals("data-foo"));
             Assert.Equal("bar", attribute.Value);
             attribute = Assert.Single(output.Attributes, attr => attr.Name.Equals("data-hello"));
             Assert.Equal("world", attribute.Value);
+            attribute = Assert.Single(output.Attributes, attr => attr.Name.Equals("data-valmsg-replace"));
+            Assert.Equal("true", attribute.Value);
             Assert.Equal(expectedOutputContent, output.Content.GetContent());
+        }
+
+        [Fact]
+        public void ProcessAsync_MergesTagBuilderFromGenerateWithoutValidationMessage()
+        {
+            // Arrange
+            var tagBuilder = new TagBuilder("span");
+            tagBuilder.InnerHtml.SetHtmlContent("");
+            tagBuilder.Attributes.Add("data-foo", "bar");
+            tagBuilder.Attributes.Add("data-hello", "world");
+            tagBuilder.Attributes.Add("data-valmsg-replace", "false");
+
+            var generator = new Mock<IHtmlGenerator>(MockBehavior.Strict);
+            var setup = generator
+                .Setup(mock => mock.GenerateValidationMessage(
+                    It.IsAny<ViewContext>(),
+                    It.IsAny<ModelExplorer>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<object>()))
+                .Returns(tagBuilder);
+
+            var validationMessageTagHelper = new ValidationMessageTagHelper(generator.Object)
+            {
+                For = CreateModelExpression("Hello")
+            };
+            var output = new TagHelperOutput(
+                "span",
+                attributes: new TagHelperAttributeList(),
+                getChildContentAsync: (useCachedResult, encoder) =>
+                {
+                    var tagHelperContent = new DefaultTagHelperContent();
+                    tagHelperContent.SetContent(null);
+                    return Task.FromResult<TagHelperContent>(tagHelperContent);
+                });
+
+            var context = new TagHelperContext(
+                tagName: "span",
+                allAttributes: new TagHelperAttributeList(
+                    Enumerable.Empty<TagHelperAttribute>()),
+                items: new Dictionary<object, object>(),
+                uniqueId: "test");
+
+            var viewContext = CreateViewContext();
+            validationMessageTagHelper.ViewContext = viewContext;
+
+            // Act
+            validationMessageTagHelper.ProcessAsync(context, output).Wait();
+
+            // Assert
+            Assert.Equal("span", output.TagName);
+            Assert.Equal(3, output.Attributes.Count);
+            var attribute = Assert.Single(output.Attributes, attr => attr.Name.Equals("data-foo"));
+            Assert.Equal("bar", attribute.Value);
+            attribute = Assert.Single(output.Attributes, attr => attr.Name.Equals("data-hello"));
+            Assert.Equal("world", attribute.Value);
+            attribute = Assert.Single(output.Attributes, attr => attr.Name.Equals("data-valmsg-replace"));
+            Assert.Equal("false", attribute.Value);
+            Assert.Equal("", output.Content.GetContent());
         }
 
         [Fact]
