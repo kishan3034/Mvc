@@ -358,6 +358,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
 
         [Theory]
         [InlineData("Content of validation message", "Content of validation message")]
+        [InlineData("\r\n  \r\n", "New HTML")]
         public async Task ProcessAsync_MergesTagBuilderFromGenerateValidationMessage(
             string childContent,
             string expectedOutputContent)
@@ -420,7 +421,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
         }
 
         [Fact]
-        public void ProcessAsync_MergesTagBuilderFromGenerateWithoutValidationMessage()
+        public async Task ProcessAsync_MergesTagBuilderFromGenerateWithoutValidationMessage()
         {
             // Arrange
             var tagBuilder = new TagBuilder("span");
@@ -435,7 +436,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                     It.IsAny<ViewContext>(),
                     It.IsAny<ModelExplorer>(),
                     It.IsAny<string>(),
-                    It.IsAny<string>(),
+                    "",
                     It.IsAny<string>(),
                     It.IsAny<object>()))
                 .Returns(tagBuilder);
@@ -465,7 +466,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
             validationMessageTagHelper.ViewContext = viewContext;
 
             // Act
-            validationMessageTagHelper.ProcessAsync(context, output).Wait();
+            await validationMessageTagHelper.ProcessAsync(context, output);
 
             // Assert
             Assert.Equal("span", output.TagName);

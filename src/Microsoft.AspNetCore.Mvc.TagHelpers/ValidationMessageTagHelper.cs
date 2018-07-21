@@ -72,18 +72,20 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                 }
 
                 string message = null;
-                TagHelperContent tagHelperContent = null;
                 if (!output.IsContentModified)
                 {
-                    tagHelperContent = await output.GetChildContentAsync();
-                    message = tagHelperContent.GetContent();
+                    var tagHelperContent = await output.GetChildContentAsync();
+                    if (!tagHelperContent.IsEmptyOrWhiteSpace)
+                    {
+                        message = tagHelperContent.GetContent();
+                    }
                 }
 
                 var tagBuilder = Generator.GenerateValidationMessage(
                     ViewContext,
                     For.ModelExplorer,
                     For.Name,
-                    message: output.IsContentModified ? null : message,
+                    message: message,
                     tag: null,
                     htmlAttributes: htmlAttributes);
 
@@ -91,9 +93,16 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                 {
                     output.MergeAttributes(tagBuilder);
 
-                    if (!output.IsContentModified && tagBuilder.HasInnerHtml)
+                    if (!output.IsContentModified)
                     {
-                        output.Content.SetHtmlContent(message);
+                        if (string.IsNullOrWhiteSpace(message) && tagBuilder.HasInnerHtml)
+                        {
+                            output.Content.SetHtmlContent(tagBuilder.InnerHtml);
+                        }
+                        else
+                        {
+                            output.Content.SetHtmlContent(message);
+                        }
                     }
                 }
             }
